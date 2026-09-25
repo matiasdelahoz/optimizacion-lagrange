@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Misión Optimización — Juego de Matemáticas</title>
+<style>
+*{box-sizing:border-box}
+:root{--bg:#07111f;--panel:#101d31;--panel2:#152640;--text:#f4f7fb;--muted:#aab8cc;--accent:#55e6a5;--accent2:#6ea8ff;--danger:#ff5d73;--gold:#ffd166}
+body{margin:0;background:radial-gradient(circle at top,#142d4d 0,#07111f 48%,#050a12 100%);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--text);min-height:100vh}
+button,input{font:inherit}
+button{cursor:pointer;border:0}
+.wrap{width:min(1050px,94vw);margin:auto;padding:18px 0 30px}
+header{text-align:center;padding:12px 0 10px}
+h1{margin:0;font-size:clamp(27px,6vw,46px);letter-spacing:-1px}
+.sub{color:var(--muted);margin:7px 0 0}
+.hud{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:15px 0}
+.stat{background:rgba(16,29,49,.9);border:1px solid #27405f;border-radius:15px;padding:10px;text-align:center}
+.stat b{display:block;font-size:20px}.stat span{font-size:12px;color:var(--muted)}
+.screen{background:rgba(16,29,49,.96);border:1px solid #294361;border-radius:20px;padding:18px;box-shadow:0 18px 50px #0005}
+.hidden{display:none!important}
+.center{text-align:center}
+.primary{background:linear-gradient(135deg,#55e6a5,#36b7ff);color:#04111c;font-weight:900;padding:14px 25px;border-radius:13px;box-shadow:0 8px 25px #36b7ff33}
+.secondary{background:#203550;color:white;padding:12px 18px;border-radius:12px}
+.danger{background:#552333;color:white;padding:12px 18px;border-radius:12px}
+#snakeCanvas{display:block;width:min(520px,100%);height:auto;aspect-ratio:1;margin:10px auto;background:#07131e;border:2px solid #294361;border-radius:16px;touch-action:none}
+.levelTitle{text-align:center;margin:5px 0;font-size:22px}
+.instructions{text-align:center;color:var(--muted);font-size:14px}
+.controls{display:grid;grid-template-columns:repeat(3,58px);justify-content:center;gap:7px;margin:12px auto 2px}
+.controls button{width:58px;height:48px;background:#203550;color:#fff;border-radius:12px;font-size:23px}
+.controls .blank{visibility:hidden}
+.exercise-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.badge{padding:7px 10px;border-radius:999px;background:#203550;color:#dceaff;font-size:12px;font-weight:800}
+.timer{font-size:25px;font-weight:900;color:var(--gold)}
+.question{font-size:clamp(19px,4vw,28px);line-height:1.35;margin:18px 0}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.option{background:#182b45;border:1px solid #315171;color:#fff;text-align:left;padding:15px;border-radius:13px;min-height:55px}
+.option:hover{border-color:var(--accent2);background:#1d3554}
+.option:disabled{cursor:default;opacity:.75}
+.feedback{margin-top:13px;padding:13px;border-radius:12px;background:#0b1625;color:#dce7f5}
+.good{border:1px solid #2bcf91}.bad{border:1px solid #ff5d73}
+.next{margin-top:12px}
+.categoryGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:15px}
+.cat{background:#152640;border-radius:14px;padding:14px;text-align:center;border:1px solid #294361}
+.cat b{font-size:22px;display:block}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+td,th{padding:10px;border-bottom:1px solid #294361;text-align:left}
+.small{font-size:13px;color:var(--muted)}
+@media(max-width:650px){
+ .hud{grid-template-columns:repeat(2,1fr)}
+ .options{grid-template-columns:1fr}
+ .categoryGrid{grid-template-columns:1fr}
+ .screen{padding:13px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<h1>🧠 Misión Optimización</h1>
+<p class="sub">Culebrita + retos de cálculo · 30 segundos · 5 vidas</p>
+</header>
+
+<div class="hud">
+<div class="stat"><b id="score">0</b><span>Puntos totales</span></div>
+<div class="stat"><b id="lives">❤️❤️❤️❤️❤️</b><span>Vidas</span></div>
+<div class="stat"><b id="level">1 / 12</b><span>Nivel</span></div>
+<div class="stat"><b id="timerTop">30</b><span>Segundos</span></div>
+</div>
+
+<section id="start" class="screen center">
+<h2>🚀 ¿Listo para el reto?</h2>
+<p>Primero juega una mini culebrita. Cuando consigas la comida, desbloqueas el ejercicio matemático.</p>
+<div class="categoryGrid">
+<div class="cat"><b>📈</b>Optimización</div>
+<div class="cat"><b>🔺</b>Máximos y mínimos</div>
+<div class="cat"><b>🎯</b>Lagrange</div>
+</div>
+<br>
+<button class="primary" onclick="startGame()">▶ COMENZAR</button>
+<p class="small">Funciona con teclado, mouse y controles táctiles.</p>
+</section>
+
+<section id="snakeScreen" class="screen hidden">
+<h2 class="levelTitle" id="snakeTitle">Nivel 1 · Culebrita</h2>
+<p class="instructions">Come el 🟢 para pasar al ejercicio. Evita las paredes y tu propio cuerpo.</p>
+<canvas id="snakeCanvas" width="420" height="420"></canvas>
+<div class="controls">
+<div class="blank">.</div><button onclick="setDir(0,-1)">⬆️</button><div class="blank">.</div>
+<button onclick="setDir(-1,0)">⬅️</button><button onclick="setDir(0,1)">⬇️</button><button onclick="setDir(1,0)">➡️</button>
+</div>
+</section>
+
+<section id="challenge" class="screen hidden">
+<div class="exercise-head">
+<span class="badge" id="catBadge">OPTIMIZACIÓN</span>
+<span class="timer">⏱️ <span id="timer">30</span>s</span>
+</div>
+<div class="question" id="question"></div>
+<div class="options" id="options"></div>
+<div id="feedback" class="feedback hidden"></div>
+<button id="nextBtn" class="primary next hidden" onclick="nextExercise()">➡️ Siguiente reto</button>
+</section>
+
+<section id="end" class="screen hidden center">
+<h2>🏆 Partida terminada</h2>
+<p id="endMsg"></p>
+<h3 id="finalScore"></h3>
+<div style="font-size:56px;font-weight:900;margin:10px 0" id="finalGrade">1.0</div>
+<p><b>📊 Calificación final (1.0 a 5.0)</b></p>
+<p id="correctCount"></p>
+<table>
+<thead><tr><th>Categoría</th><th>Puntos</th></tr></thead>
+<tbody>
+<tr><td>📈 Optimización</td><td id="sOpt">0</td></tr>
+<tr><td>🔺 Máximos y mínimos</td><td id="sMax">0</td></tr>
+<tr><td>🎯 Lagrange</td><td id="sLag">0</td></tr>
+</tbody>
+</table>
+<br>
+<button class="primary" onclick="startGame()">🔄 JUGAR DE NUEVO</button>
+</section>
+</div>
+
+<script>
+const exercises=[
+{cat:"Optimización",key:"opt",q:"Una empresa tiene costo C(x)=x²−20x+150. ¿Qué nivel de producción minimiza el costo?",o:["x=5","x=10","x=20","x=40"],a:1,e:"C'(x)=2x−20. Igualando a cero: x=10. Además C''(x)=2>0, por lo que es un mínimo."},
+{cat:"Optimización",key:"opt",q:"Si el ingreso es R(x)=60x−x², ¿qué cantidad maximiza el ingreso?",o:["x=15","x=20","x=30","x=60"],a:2,e:"R'(x)=60−2x=0 → x=30. Como R''(x)=−2<0, es un máximo."},
+{cat:"Optimización",key:"opt",q:"Una caja sin tapa tiene base cuadrada y volumen fijo. Para optimizar material, ¿qué herramienta se usa principalmente?",o:["Derivación","Matriz inversa","Logaritmos solamente","Integración por partes"],a:0,e:"Los problemas de optimización se plantean con una función objetivo y se buscan puntos críticos mediante derivadas."},
+{cat:"Máximos y mínimos",key:"max",q:"Para f(x)=x²−6x+5, ¿dónde está el mínimo?",o:["x=2","x=3","x=4","x=6"],a:1,e:"f'(x)=2x−6=0 → x=3. Como f''(x)=2>0, allí hay un mínimo."},
+{cat:"Máximos y mínimos",key:"max",q:"Para f(x)=−x²+8x−3, ¿qué tipo de punto hay en x=4?",o:["Máximo","Mínimo","No es crítico","Punto de inflexión"],a:0,e:"f'(x)=−2x+8=0 en x=4 y f''(x)=−2<0: máximo."},
+{cat:"Máximos y mínimos",key:"max",q:"Si f'(c)=0 y f''(c)>0, el punto crítico c corresponde a un...",o:["Máximo local","Mínimo local","Punto imposible","Máximo absoluto siempre"],a:1,e:"El criterio de la segunda derivada indica mínimo local cuando f''(c)>0."},
+{cat:"Lagrange",key:"lag",q:"En multiplicadores de Lagrange, para optimizar f(x,y) con g(x,y)=c se plantea:",o:["∇f=λ∇g","f=g siempre","∇f=0 solamente","g=λf"],a:0,e:"La condición fundamental es ∇f=λ∇g, junto con la restricción g(x,y)=c."},
+{cat:"Lagrange",key:"lag",q:"Maximiza f(x,y)=xy sujeto a x+y=10. ¿Cuál es el punto interior candidato?",o:["(2,8)","(4,6)","(5,5)","(10,0)"],a:2,e:"Por simetría y las condiciones de Lagrange, x=y; con x+y=10 se obtiene (5,5)."},
+{cat:"Lagrange",key:"lag",q:"Si ∇f=λ∇g y g(x,y)=c, además de las ecuaciones de gradientes se debe cumplir:",o:["x=y","g(x,y)=c","λ=1","f=0"],a:1,e:"La restricción es indispensable: g(x,y)=c."},
+{cat:"Optimización",key:"opt",q:"Si una función de beneficio B(x) tiene B'(x)=0 en x=12 y B''(12)<0, ¿qué ocurre?",o:["Hay máximo local","Hay mínimo local","No hay punto crítico","La función es lineal"],a:0,e:"Segunda derivada negativa en el punto crítico → máximo local."},
+{cat:"Máximos y mínimos",key:"max",q:"En un intervalo cerrado, para hallar el máximo y mínimo absoluto se deben comparar:",o:["Solo los extremos","Solo los puntos críticos","Puntos críticos y extremos del intervalo","Solo la segunda derivada"],a:2,e:"En un intervalo cerrado se evalúan puntos críticos interiores y extremos del intervalo."},
+{cat:"Lagrange",key:"lag",q:"Para f(x,y)=x²+y² con restricción x+y=6, el punto que minimiza f es:",o:["(0,6)","(2,4)","(3,3)","(6,0)"],a:2,e:"La suma fija de cuadrados se minimiza cuando x=y. Por tanto (3,3)."},
+{cat:"Optimización",key:"opt",q:"En un problema de optimización, la función que se desea maximizar o minimizar se llama:",o:["Función objetivo","Restricción siempre","Derivada parcial","Variable auxiliar"],a:0,e:"La función objetivo representa la cantidad que se quiere maximizar o minimizar."},
+{cat:"Máximos y mínimos",key:"max",q:"Un punto crítico puede aparecer cuando:",o:["f'(x)=0 o f'(x) no existe","f(x)=0 únicamente","x=0 siempre","f''(x)=0 únicamente"],a:0,e:"Los puntos críticos aparecen cuando la derivada es cero o no existe, siempre que la función esté definida allí."}
+];
+
+let state={}, snakeTimer=null, challengeTimer=null, used=[];
+const canvas=document.getElementById("snakeCanvas"),ctx=canvas.getContext("2d");
+const N=21, cell=canvas.width/N;
+let snake,food,dir,nextDir;
+
+function $(id){return document.getElementById(id)}
+function startGame(){
+ clearInterval(snakeTimer);clearInterval(challengeTimer);
+ state={score:0,lives:5,level:1,cat:{opt:0,max:0,lag:0},combo:0,correct:0};
+ used=[]; updateHUD();
+ $("start").classList.add("hidden");$("end").classList.add("hidden");$("challenge").classList.add("hidden");$("snakeScreen").classList.remove("hidden");
+ beginSnake();
+}
+function updateHUD(){
+ $("score").textContent=state.score;$("lives").textContent="❤️".repeat(state.lives)+"🖤".repeat(5-state.lives);
+ $("level").textContent=state.level+" / 12";$("timerTop").textContent=$("timer").textContent||"30";
+}
+function beginSnake(){
+ clearInterval(snakeTimer);
+ $("snakeTitle").textContent=`Nivel ${state.level} · Culebrita`;
+ snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}];dir={x:1,y:0};nextDir=dir;placeFood();drawSnake();
+ snakeTimer=setInterval(()=>{
+   dir=nextDir;
+   const h={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
+   if(h.x<0||h.x>=N||h.y<0||h.y>=N||snake.some(p=>p.x===h.x&&p.y===h.y)){endSnakeFail();return}
+   snake.unshift(h);
+   if(h.x===food.x&&h.y===food.y){clearInterval(snakeTimer);showChallenge();return}
+   snake.pop();drawSnake();
+ },120);
+}
+function placeFood(){
+ do{food={x:Math.floor(Math.random()*N),y:Math.floor(Math.random()*N)}}
+ while(snake.some(p=>p.x===food.x&&p.y===food.y));
+}
+function drawSnake(){
+ ctx.fillStyle="#07131e";ctx.fillRect(0,0,canvas.width,canvas.height);
+ ctx.strokeStyle="#10243a";ctx.lineWidth=1;
+ for(let i=0;i<=N;i++){ctx.beginPath();ctx.moveTo(i*cell,0);ctx.lineTo(i*cell,canvas.height);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i*cell);ctx.lineTo(canvas.width,i*cell);ctx.stroke()}
+ ctx.fillStyle="#55e6a5";snake.forEach((p,i)=>{ctx.fillStyle=i===0?"#b8ffdb":"#55e6a5";ctx.fillRect(p.x*cell+2,p.y*cell+2,cell-4,cell-4)});
+ ctx.fillStyle="#55ff8a";ctx.beginPath();ctx.arc(food.x*cell+cell/2,food.y*cell+cell/2,cell*.3,0,Math.PI*2);ctx.fill();
+}
+function setDir(x,y){
+ if(dir.x+x===0&&dir.y+y===0)return;
+ nextDir={x,y};
+}
+document.addEventListener("keydown",e=>{
+ const k=e.key.toLowerCase();
+ if(k==="arrowup"||k==="w")setDir(0,-1);
+ if(k==="arrowdown"||k==="s")setDir(0,1);
+ if(k==="arrowleft"||k==="a")setDir(-1,0);
+ if(k==="arrowright"||k==="d")setDir(1,0);
+});
+function endSnakeFail(){
+ clearInterval(snakeTimer); loseLife("La culebrita chocó 😵");
+}
+function chooseExercise(){
+ let available=exercises.filter((_,i)=>!used.includes(i));
+ if(!available.length){used=[];available=exercises}
+ const q=available[Math.floor(Math.random()*available.length)];
+ const idx=exercises.indexOf(q);used.push(idx);return q;
+}
+function showChallenge(){
+ $("snakeScreen").classList.add("hidden");$("challenge").classList.remove("hidden");
+ const q=chooseExercise();state.current=q;
+ $("catBadge").textContent=q.cat.toUpperCase();
+ $("question").textContent=q.q;$("feedback").className="feedback hidden";$("feedback").textContent="";
+ $("nextBtn").classList.add("hidden");
+ $("options").innerHTML="";
+ q.o.forEach((txt,i)=>{const b=document.createElement("button");b.className="option";b.textContent=String.fromCharCode(65+i)+") "+txt;b.onclick=()=>answer(i);$("options").appendChild(b)});
+ startChallengeTimer();
+}
+function startChallengeTimer(){
+ clearInterval(challengeTimer);let t=30;$("timer").textContent=t;updateHUD();
+ challengeTimer=setInterval(()=>{t--;$("timer").textContent=t;$("timerTop").textContent=t;if(t<=0){clearInterval(challengeTimer);answer(-1)}},1000);
+}
+function answer(i){
+ if($("feedback").classList.contains("good")||$("feedback").classList.contains("bad"))return;
+ clearInterval(challengeTimer);
+ const q=state.current, ok=i===q.a;
+ document.querySelectorAll(".option").forEach(b=>b.disabled=true);
+ const fb=$("feedback");fb.classList.remove("hidden");
+ if(ok){
+   state.combo++;state.correct++;let pts=100+Math.min(100,(state.combo-1)*20);state.score+=pts;state.cat[q.key]+=pts;
+   fb.className="feedback good";fb.innerHTML=`✅ ¡Correcto! +${pts} puntos.<br><span class="small">${q.e}</span>`;
+ }else{
+   state.combo=0;state.lives--;fb.className="feedback bad";fb.innerHTML=`❌ ${i===-1?"Se acabó el tiempo.":"Respuesta incorrecta."}<br><span class="small">${q.e}</span>`;
+ }
+ updateHUD();
+ $("nextBtn").classList.remove("hidden");$("nextBtn").textContent=state.lives>0?"➡️ Siguiente reto":"🏁 Ver resultado";
+}
+function nextExercise(){
+ if(state.lives<=0){finish();return}
+ state.level++;
+ if(state.level>12){finish();return}
+ $("challenge").classList.add("hidden");$("snakeScreen").classList.remove("hidden");beginSnake();
+}
+function loseLife(msg){
+ state.lives--;state.combo=0;updateHUD();
+ if(state.lives<=0){finish();return}
+ alert(msg+"  Te queda(n) "+state.lives+" vida(s).");
+ beginSnake();
+}
+function finish(){
+ clearInterval(snakeTimer);clearInterval(challengeTimer);
+ $("snakeScreen").classList.add("hidden");$("challenge").classList.add("hidden");$("end").classList.remove("hidden");
+ $("finalScore").textContent=`Puntaje final: ${state.score}`;
+ let grade=1+(state.correct/12)*4; grade=Math.max(1,Math.min(5,Math.round(grade*10)/10));
+ $("finalGrade").textContent=grade.toFixed(1);
+ $("correctCount").textContent=`${state.correct} de 12 respuestas correctas · ${Math.round(state.correct/12*100)}% de aciertos`;
+ $("sOpt").textContent=state.cat.opt;$("sMax").textContent=state.cat.max;$("sLag").textContent=state.cat.lag;
+ $("endMsg").textContent=state.lives>0?"🔥 ¡Completaste todos los niveles!":"💪 Se acabaron las vidas. ¡Inténtalo otra vez!";
+}
+</script>
+</body>
+</html>
